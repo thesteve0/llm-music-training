@@ -1,0 +1,121 @@
+# Music Lyrics Understanding Fine-Tuning Configuration
+# Optimized for single 48GB GPU with maximum VRAM utilization
+
+# Model Configuration
+model:
+  name: "meta-llama/Llama-3.2-3B-Instruct"
+  torch_dtype: "float16"
+  device_map: "auto"
+  trust_remote_code: true
+  
+# LoRA Configuration - High-performance settings
+lora:
+  r: 128                          # High rank for maximum adaptation capacity
+  lora_alpha: 256                 # Strong adaptation signal (2x rank)
+  target_modules:
+    - "q_proj"
+    - "k_proj" 
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+    - "lm_head"
+  lora_dropout: 0.05             # Minimal dropout for fast learning
+  bias: "none"
+  task_type: "CAUSAL_LM"
+  inference_mode: false          # Enable training mode
+
+# Training Configuration - Optimized for 45GB VRAM utilization
+training:
+  output_dir: "/shared/models/music-lyrics-model"
+  num_train_epochs: 2
+  per_device_train_batch_size: 24    # Aggressive batch size for 45GB GPU
+  per_device_eval_batch_size: 24
+  gradient_accumulation_steps: 1     # No accumulation needed with large batches
+  learning_rate: 2e-4                # Higher LR for large batch training
+  warmup_steps: 50                   # Fast warmup
+  logging_steps: 10                  # Frequent logging for monitoring
+  eval_steps: 100                    # Regular evaluation
+  save_steps: 100
+  evaluation_strategy: "steps"
+  fp16: true                         # Full FP16 precision
+  dataloader_pin_memory: true
+  dataloader_num_workers: 4          # Parallel data loading
+  remove_unused_columns: false
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+  max_grad_norm: 1.0                 # Gradient clipping for stability
+  lr_scheduler_type: "cosine"        # Cosine annealing
+  save_total_limit: 2                # Limit checkpoints to save space
+  seed: 42
+
+# Dataset Configuration
+dataset:
+  name: "rajtripathi/5M-Songs-Lyrics"
+  train_split: 0.95
+  eval_split: 0.05
+  max_length: 2048                   # Maximum sequence length
+  num_samples: 50000                 # Subset for demo training
+  shuffle_seed: 42
+
+# Data Processing
+data_processing:
+  clean_lyrics: true                 # Remove special characters and normalize
+  min_lyric_length: 50              # Filter out very short lyrics
+  max_lyric_length: 2000            # Filter out extremely long lyrics
+  remove_duplicates: true           # Remove duplicate songs
+  
+# Instruction Format Configuration
+instruction_format:
+  system_prompt: "You are a music expert specializing in lyrics analysis, artist styles, and genre characteristics."
+  instruction_templates:
+    - "Analyze these song lyrics for artistic style and genre characteristics:"
+    - "What themes and artistic elements are present in these lyrics?"
+    - "Identify the musical style and cultural context of these lyrics:"
+    - "Provide insights about the artist, genre, and lyrical themes:"
+
+# Environment Variables (for deployment)
+environment:
+  EPOCHS: "2"
+  BATCH_SIZE: "24"
+  LEARNING_RATE: "2e-4"
+  LORA_RANK: "128"
+  DATA_DIR: "/shared/data"
+  OUTPUT_DIR: "/shared/models"
+  
+# Evaluation Configuration
+evaluation:
+  demo_scenarios:
+    - name: "Hip-Hop Success Narrative"
+      description: "Test understanding of success themes in hip-hop"
+      sample_lyrics: "Started from the bottom now we're here..."
+      
+    - name: "Country Storytelling"
+      description: "Test recognition of country narrative style"
+      sample_lyrics: "Small town, Friday night lights..."
+      
+    - name: "Rock Anthem"
+      description: "Test identification of rock characteristics"
+      sample_lyrics: "We are the champions of the world..."
+
+# Hardware Optimization
+hardware:
+  target_gpu_memory: "45GB"         # Target 94% utilization of 48GB
+  memory_efficient_attention: true
+  use_cache: false                  # Disable KV cache during training
+  gradient_checkpointing: false     # Disabled for speed with large VRAM
+
+# Monitoring and Logging
+monitoring:
+  tensorboard_dir: "/shared/models/tensorboard"
+  log_level: "INFO"
+  track_gpu_memory: true
+  track_throughput: true
+  
+# Demo Preparation
+demo:
+  save_before_after_models: true    # Keep both base and fine-tuned
+  prepare_comparison_examples: true
+  export_demo_responses: true

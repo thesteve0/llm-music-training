@@ -1,0 +1,44 @@
+---
+# PVC for CIFAR-10 dataset storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cifar10-data-pvc
+  namespace: rhoai-learning
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: gp3-csi  # Adjust based on your cluster's storage classes
+
+---
+# PVC for trained models and checkpoints
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: trained-models-pvc
+  namespace: rhoai-learning
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: gp3-csi  # Adjust based on your cluster's storage classes
+
+---
+# PVC for workspace (logs, temporary files)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: workspace-pvc
+  namespace: rhoai-learning
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: gp3-csi  # Adjust based on your cluster's storage classes
