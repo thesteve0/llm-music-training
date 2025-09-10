@@ -63,7 +63,7 @@ def verify_dependencies():
     logger.info("All dependencies verified successfully")
     
 
-def load_config(config_path: str = "training/config.yaml") -> Dict[str, Any]:
+def load_config(config_path: str = "/shared/code/training/config.yaml") -> Dict[str, Any]:
     """Load configuration from YAML file with environment variable overrides"""
     logger.info(f"Loading configuration from {config_path}")
     
