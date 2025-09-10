@@ -205,24 +205,55 @@ def download_and_process_dataset(config: Dict[str, Any]) -> Dataset:
     
     logger.info(f"Processing streaming dataset to collect {num_samples_needed} samples...")
     
+    # First, let's examine the data structure
+    sample_examined = False
+    
     for i, sample in enumerate(streaming_dataset):
         if len(processed_samples) >= num_samples_needed:
             break
             
-        # Clean and filter sample
-        if data_processing_config['clean_lyrics'] and 'text' in sample:
-            sample['text'] = sample['text'].strip() if sample['text'] else ""
+        # Examine first sample to understand data structure
+        if not sample_examined:
+            logger.info(f"Sample data structure: {sample.keys()}")
+            for key, value in sample.items():
+                logger.info(f"  {key}: {type(value)} - {str(value)[:100]}...")
+            sample_examined = True
         
-        # Filter by length
-        if 'text' in sample:
-            text_len = len(sample['text'])
-            if (text_len >= data_processing_config['min_lyric_length'] and 
-                text_len <= data_processing_config['max_lyric_length']):
-                processed_samples.append(sample)
+        # Determine the text field - could be 'text', 'lyrics', 'content', etc.
+        text_field = None
+        for potential_field in ['text', 'lyrics', 'content', 'song_lyrics', 'lyric']:
+            if potential_field in sample and sample[potential_field]:
+                text_field = potential_field
+                break
+        
+        if text_field is None:
+            # Skip samples without text content
+            continue
+            
+        # Clean and filter sample
+        text_content = sample[text_field].strip() if sample[text_field] else ""
+        
+        if not text_content:
+            continue
+            
+        # Apply length filter
+        text_len = len(text_content)
+        if (text_len >= data_processing_config['min_lyric_length'] and 
+            text_len <= data_processing_config['max_lyric_length']):
+            
+            # Create standardized sample
+            processed_sample = {
+                'text': text_content,
+                'artist': sample.get('artist', 'Unknown Artist'),
+                'genre': sample.get('genre', sample.get('style', 'Unknown Genre'))
+            }
+            processed_samples.append(processed_sample)
         
         # Log progress every 10k samples
         if i % 10000 == 0:
             logger.info(f"Processed {i} samples, collected {len(processed_samples)} valid samples")
+            if len(processed_samples) > 0:
+                logger.info(f"Sample valid text length: {len(processed_samples[-1]['text'])}")
     
     # Convert to Dataset object
     dataset = Dataset.from_list(processed_samples)
