@@ -406,7 +406,7 @@ def setup_training_arguments(config: Dict[str, Any]) -> TrainingArguments:
         logging_steps=training_config['logging_steps'],
         eval_steps=training_config['eval_steps'],
         save_steps=training_config['save_steps'],
-        evaluation_strategy=training_config['evaluation_strategy'],
+        eval_strategy=training_config['evaluation_strategy'],
         fp16=training_config['fp16'],
         dataloader_pin_memory=training_config['dataloader_pin_memory'],
         dataloader_num_workers=training_config['dataloader_num_workers'],

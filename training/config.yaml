@@ -57,7 +57,7 @@ dataset:
   train_split: 0.95
   eval_split: 0.05
   max_length: 2048                   # Maximum sequence length
-  num_samples: 90000                 # Subset for demo training
+  num_samples: 10000                 # Subset for demo training
   shuffle_seed: 42
 
 # Data Processing
