@@ -353,8 +353,8 @@ def tokenize_dataset(dataset: Dataset, tokenizer, config: Dict[str, Any]) -> Dat
             return_tensors=None
         )
         
-        # For causal LM, labels are the same as input_ids
-        tokenized['labels'] = tokenized['input_ids'].copy()
+        # Don't manually set labels - DataCollatorForLanguageModeling will handle this automatically
+        # for causal LM when mlm=False
         
         return tokenized
     
