@@ -56,7 +56,7 @@ dataset:
   name: "rajtripathi/5M-Songs-Lyrics"
   train_split: 0.95
   eval_split: 0.05
-  max_length: 2048                   # Maximum sequence length
+  max_length: 512                    # Reduced sequence length for memory
   num_samples: 1000                 # Subset for demo training
   shuffle_seed: 42
 
@@ -105,7 +105,7 @@ hardware:
   target_gpu_memory: "45GB"         # Target 94% utilization of 48GB
   memory_efficient_attention: true
   use_cache: false                  # Disable KV cache during training
-  gradient_checkpointing: false     # Disabled for speed with large VRAM
+  gradient_checkpointing: true      # Enabled to reduce memory usage
 
 # Monitoring and Logging
 monitoring:

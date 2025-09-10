@@ -333,6 +333,9 @@ def setup_model_and_tokenizer(config: Dict[str, Any]):
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
     
+    # Enable gradient checkpointing to reduce memory usage
+    model.gradient_checkpointing_enable()
+    
     logger.info("Model and LoRA configuration completed")
     return model, tokenizer
 
