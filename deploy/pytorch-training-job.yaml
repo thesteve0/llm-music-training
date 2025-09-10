@@ -96,9 +96,9 @@ spec:
                 - name: WORKSPACE_DIR
                   value: "/shared/workspace"
                 - name: HF_HOME
-                  value: "/shared/workspace/.cache/huggingface"
+                  value: "/shared/data/.cache/huggingface"
                 - name: TRANSFORMERS_CACHE
-                  value: "/shared/workspace/.cache/transformers"
+                  value: "/shared/data/.cache/transformers"
 
               # Volume mounts for code, data, and model storage
               volumeMounts:
