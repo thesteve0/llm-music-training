@@ -391,11 +391,11 @@ def setup_training_arguments(config: Dict[str, Any]) -> TrainingArguments:
     
     args = TrainingArguments(
         output_dir=output_dir,
-        num_train_epochs=training_config['num_train_epochs'],
-        per_device_train_batch_size=training_config['per_device_train_batch_size'],
-        per_device_eval_batch_size=training_config['per_device_eval_batch_size'],
-        gradient_accumulation_steps=training_config['gradient_accumulation_steps'],
-        learning_rate=training_config['learning_rate'],
+        num_train_epochs=int(training_config['num_train_epochs']),
+        per_device_train_batch_size=int(training_config['per_device_train_batch_size']),
+        per_device_eval_batch_size=int(training_config['per_device_eval_batch_size']),
+        gradient_accumulation_steps=int(training_config['gradient_accumulation_steps']),
+        learning_rate=float(training_config['learning_rate']),
         warmup_steps=training_config['warmup_steps'],
         logging_steps=training_config['logging_steps'],
         eval_steps=training_config['eval_steps'],
