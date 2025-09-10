@@ -47,7 +47,7 @@ spec:
           initContainers:
             - name: git-clone
               image: alpine/git:latest
-              command: ["git", "clone", "https://github.com/stpousty/llm-music-training.git", "/shared/code"]
+              command: ["git", "clone", "https://github.com/thesteve0/llm-music-training.git", "/shared/code"]
               volumeMounts:
                 - name: code-volume
                   mountPath: /shared/code
