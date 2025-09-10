@@ -76,12 +76,8 @@ instruction_format:
     - "Identify the musical style and cultural context of these lyrics:"
     - "Provide insights about the artist, genre, and lyrical themes:"
 
-# Environment Variables (for deployment)
+# Environment Variables (for deployment infrastructure paths)
 environment:
-  EPOCHS: "2"
-  BATCH_SIZE: "1"
-  LEARNING_RATE: "2e-4"
-  LORA_RANK: "32"
   DATA_DIR: "/shared/data"
   OUTPUT_DIR: "/shared/models"
   
