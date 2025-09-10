@@ -10,8 +10,8 @@ model:
   
 # LoRA Configuration - High-performance settings
 lora:
-  r: 128                          # High rank for maximum adaptation capacity
-  lora_alpha: 256                 # Strong adaptation signal (2x rank)
+  r: 32                           # Reduced rank for memory efficiency
+  lora_alpha: 64                  # Reduced adaptation signal (2x rank)
   target_modules:
     - "q_proj"
     - "k_proj" 
@@ -79,9 +79,9 @@ instruction_format:
 # Environment Variables (for deployment)
 environment:
   EPOCHS: "2"
-  BATCH_SIZE: "24"
+  BATCH_SIZE: "1"
   LEARNING_RATE: "2e-4"
-  LORA_RANK: "128"
+  LORA_RANK: "32"
   DATA_DIR: "/shared/data"
   OUTPUT_DIR: "/shared/models"
   
