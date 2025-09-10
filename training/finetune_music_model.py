@@ -309,11 +309,11 @@ def setup_model_and_tokenizer(config: Dict[str, Any]):
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     
-    # Load model with memory optimization for single-node training
+    # Load model with explicit single GPU placement
     model = AutoModelForCausalLM.from_pretrained(
         model_config['name'],
         torch_dtype=getattr(torch, model_config['torch_dtype']),
-        device_map="auto",  # Auto device mapping for memory efficiency
+        device_map={"": 0},  # Explicit single GPU placement
         low_cpu_mem_usage=True,  # Reduce CPU memory usage during loading
         trust_remote_code=model_config['trust_remote_code']
     )
