@@ -348,7 +348,7 @@ def tokenize_dataset(dataset: Dataset, tokenizer, config: Dict[str, Any]) -> Dat
         tokenized = tokenizer(
             examples['text'],
             truncation=True,
-            padding=False,
+            padding=False,  # Let data collator handle padding
             max_length=max_length,
             return_tensors=None
         )
@@ -477,10 +477,11 @@ def main():
     # Setup training arguments
     training_args = setup_training_arguments(config)
     
-    # Data collator
+    # Data collator with padding for variable-length sequences
     data_collator = DataCollatorForLanguageModeling(
         tokenizer=tokenizer,
         mlm=False,  # Causal LM, not masked LM
+        pad_to_multiple_of=8,  # Optimize for GPU efficiency
     )
     
     # Create trainer
