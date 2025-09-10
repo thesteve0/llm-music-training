@@ -158,13 +158,14 @@ def create_mock_dataset(dataset_config, data_processing_config):
     return Dataset.from_list(expanded_samples)
 
 def download_and_process_dataset(config: Dict[str, Any]) -> Dataset:
-    """Download and process the 5M Songs Lyrics dataset"""
+    """Download and process the 5M Songs Lyrics dataset using proper sampling"""
     logger.info("Downloading and processing dataset...")
     
     # Test network connectivity first
     if not test_network_connectivity():
         logger.error("No network connectivity to HuggingFace Hub")
-        raise ConnectionError("Cannot connect to HuggingFace Hub")
+        logger.info("Creating mock dataset for testing...")
+        return create_mock_dataset(config['dataset'], config['data_processing'])
     
     dataset_config = config['dataset']
     data_processing_config = config['data_processing']
@@ -172,7 +173,7 @@ def download_and_process_dataset(config: Dict[str, Any]) -> Dataset:
     logger.info(f"Attempting to load dataset: {dataset_config['name']}")
     
     try:
-        # Download dataset with streaming to avoid disk space issues
+        # Load streaming dataset
         streaming_dataset = load_dataset(
             dataset_config['name'], 
             split='train',
@@ -180,80 +181,81 @@ def download_and_process_dataset(config: Dict[str, Any]) -> Dataset:
             trust_remote_code=True
         )
         logger.info("Dataset loaded successfully")
+        
+        # Use proper sampling to avoid rate limits
+        # Take only what we need upfront, don't iterate through everything
+        num_samples_needed = dataset_config['num_samples']
+        logger.info(f"Taking {num_samples_needed} samples using efficient sampling")
+        
+        # Shuffle and take a subset to avoid rate limiting
+        sampled_dataset = streaming_dataset.shuffle(seed=42, buffer_size=10000).take(num_samples_needed * 2)  # Take 2x to account for filtering
+        
+        # Process the sampled dataset
+        processed_samples = []
+        sample_examined = False
+        
+        for i, sample in enumerate(sampled_dataset):
+            if len(processed_samples) >= num_samples_needed:
+                break
+                
+            # Examine first sample to understand data structure
+            if not sample_examined:
+                logger.info(f"Sample data structure: {sample.keys()}")
+                for key, value in sample.items():
+                    logger.info(f"  {key}: {type(value)} - {str(value)[:100]}...")
+                sample_examined = True
+            
+            # Based on the error output, we know the structure is {'Instruction', 'Label'}
+            # where Label contains the actual lyrics
+            text_content = ""
+            artist_info = "Unknown Artist"
+            genre_info = "Unknown Genre"
+            
+            if 'Label' in sample and sample['Label']:
+                text_content = sample['Label'].strip()
+            elif 'text' in sample and sample['text']:
+                text_content = sample['text'].strip()
+            
+            # Extract artist and genre from Instruction if available
+            if 'Instruction' in sample and sample['Instruction']:
+                instruction = sample['Instruction']
+                # Parse instruction like "Generate a song verse in the style of cam'ron in the genre of rap"
+                if 'style of ' in instruction and ' in the genre of ' in instruction:
+                    try:
+                        style_part = instruction.split('style of ')[1]
+                        artist_info = style_part.split(' in the genre of ')[0].strip()
+                        genre_info = style_part.split(' in the genre of ')[1].strip().rstrip('.')
+                    except:
+                        pass
+            
+            if not text_content:
+                continue
+                
+            # Apply length filter
+            text_len = len(text_content)
+            if (text_len >= data_processing_config['min_lyric_length'] and 
+                text_len <= data_processing_config['max_lyric_length']):
+                
+                # Create standardized sample
+                processed_sample = {
+                    'text': text_content,
+                    'artist': artist_info,
+                    'genre': genre_info
+                }
+                processed_samples.append(processed_sample)
+            
+            # Log progress
+            if (i + 1) % 1000 == 0:
+                logger.info(f"Processed {i + 1} samples, collected {len(processed_samples)} valid samples")
+        
+        if len(processed_samples) == 0:
+            logger.warning("No valid samples found, creating mock dataset")
+            return create_mock_dataset(dataset_config, data_processing_config)
+        
     except Exception as e:
         logger.error(f"Failed to load dataset: {e}")
-        # Try alternative approach
-        logger.info("Trying alternative dataset loading approach...")
-        try:
-            streaming_dataset = load_dataset(
-                dataset_config['name'], 
-                split='train',
-                streaming=True,
-                trust_remote_code=True,
-                download_mode='force_redownload'
-            )
-        except Exception as e2:
-            logger.error(f"Alternative approach also failed: {e2}")
-            logger.info("Creating mock dataset for testing...")
-            return create_mock_dataset(dataset_config, data_processing_config)
-    
-    logger.info("Using streaming dataset to avoid disk space issues")
-    
-    # Process streaming dataset and collect samples we need
-    processed_samples = []
-    num_samples_needed = dataset_config['num_samples']
-    
-    logger.info(f"Processing streaming dataset to collect {num_samples_needed} samples...")
-    
-    # First, let's examine the data structure
-    sample_examined = False
-    
-    for i, sample in enumerate(streaming_dataset):
-        if len(processed_samples) >= num_samples_needed:
-            break
-            
-        # Examine first sample to understand data structure
-        if not sample_examined:
-            logger.info(f"Sample data structure: {sample.keys()}")
-            for key, value in sample.items():
-                logger.info(f"  {key}: {type(value)} - {str(value)[:100]}...")
-            sample_examined = True
-        
-        # Determine the text field - could be 'text', 'lyrics', 'content', etc.
-        text_field = None
-        for potential_field in ['text', 'lyrics', 'content', 'song_lyrics', 'lyric']:
-            if potential_field in sample and sample[potential_field]:
-                text_field = potential_field
-                break
-        
-        if text_field is None:
-            # Skip samples without text content
-            continue
-            
-        # Clean and filter sample
-        text_content = sample[text_field].strip() if sample[text_field] else ""
-        
-        if not text_content:
-            continue
-            
-        # Apply length filter
-        text_len = len(text_content)
-        if (text_len >= data_processing_config['min_lyric_length'] and 
-            text_len <= data_processing_config['max_lyric_length']):
-            
-            # Create standardized sample
-            processed_sample = {
-                'text': text_content,
-                'artist': sample.get('artist', 'Unknown Artist'),
-                'genre': sample.get('genre', sample.get('style', 'Unknown Genre'))
-            }
-            processed_samples.append(processed_sample)
-        
-        # Log progress every 10k samples
-        if i % 10000 == 0:
-            logger.info(f"Processed {i} samples, collected {len(processed_samples)} valid samples")
-            if len(processed_samples) > 0:
-                logger.info(f"Sample valid text length: {len(processed_samples[-1]['text'])}")
+        logger.info("Creating mock dataset for testing...")
+        return create_mock_dataset(dataset_config, data_processing_config)
     
     # Convert to Dataset object
     dataset = Dataset.from_list(processed_samples)
