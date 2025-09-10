@@ -79,16 +79,8 @@ spec:
                   memory: "30Gi"
                   nvidia.com/gpu: "1"
 
-              # Environment variables for training configuration
+              # Environment variables for infrastructure only
               env:
-                - name: EPOCHS
-                  value: "2"
-                - name: BATCH_SIZE
-                  value: "24"
-                - name: LEARNING_RATE
-                  value: "2e-4"
-                - name: LORA_RANK
-                  value: "128"
                 - name: DATA_DIR
                   value: "/shared/data"
                 - name: OUTPUT_DIR
@@ -99,6 +91,8 @@ spec:
                   value: "/shared/data/.cache/huggingface"
                 - name: TRANSFORMERS_CACHE
                   value: "/shared/data/.cache/transformers"
+                - name: TOKENIZERS_PARALLELISM
+                  value: "false"
 
               # Volume mounts for code, data, and model storage
               volumeMounts:

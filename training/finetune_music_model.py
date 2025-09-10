@@ -84,12 +84,8 @@ def load_config(config_path: str = "/shared/code/training/config.yaml") -> Dict[
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
     
-    # Environment variable overrides
+    # Environment variable overrides for infrastructure paths only
     env_overrides = {
-        'EPOCHS': ('training', 'num_train_epochs'),
-        'BATCH_SIZE': ('training', 'per_device_train_batch_size'),
-        'LEARNING_RATE': ('training', 'learning_rate'),
-        'LORA_RANK': ('lora', 'r'),
         'DATA_DIR': ('environment', 'DATA_DIR'),
         'OUTPUT_DIR': ('environment', 'OUTPUT_DIR')
     }
@@ -97,11 +93,6 @@ def load_config(config_path: str = "/shared/code/training/config.yaml") -> Dict[
     for env_var, (section, key) in env_overrides.items():
         if env_var in os.environ:
             value = os.environ[env_var]
-            if env_var in ['EPOCHS', 'BATCH_SIZE', 'LORA_RANK']:
-                value = int(value)
-            elif env_var == 'LEARNING_RATE':
-                value = float(value)
-            
             config[section][key] = value
             logger.info(f"Override from {env_var}: {section}.{key} = {value}")
     
