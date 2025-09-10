@@ -309,12 +309,12 @@ def setup_model_and_tokenizer(config: Dict[str, Any]):
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     
-    # Load model with explicit device handling for single-node training
-    device_map = "cuda" if torch.cuda.is_available() else "cpu"
+    # Load model with memory optimization for single-node training
     model = AutoModelForCausalLM.from_pretrained(
         model_config['name'],
         torch_dtype=getattr(torch, model_config['torch_dtype']),
-        device_map=device_map,
+        device_map="auto",  # Auto device mapping for memory efficiency
+        low_cpu_mem_usage=True,  # Reduce CPU memory usage during loading
         trust_remote_code=model_config['trust_remote_code']
     )
     

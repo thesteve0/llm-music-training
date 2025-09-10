@@ -3,10 +3,10 @@
 
 # Model Configuration
 model:
-  name: "microsoft/Phi-3-small-8k-instruct"
+  name: "Qwen/Qwen2.5-Coder-7B-Instruct"
   torch_dtype: "float16"
   device_map: "auto"
-  trust_remote_code: true
+  trust_remote_code: false
   
 # LoRA Configuration - High-performance settings
 lora:

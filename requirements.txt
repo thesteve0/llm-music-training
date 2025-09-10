@@ -2,3 +2,4 @@
 huggingface_hub[hf_xet]
 tiktoken
 pytest
+qwen-vl-utils
