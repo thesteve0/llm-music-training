@@ -30,9 +30,9 @@ lora:
 training:
   output_dir: "/shared/models/music-lyrics-model"
   num_train_epochs: 2
-  per_device_train_batch_size: 2     # Reduced for memory constraints
-  per_device_eval_batch_size: 2
-  gradient_accumulation_steps: 12    # Maintain effective batch size of 24
+  per_device_train_batch_size: 1     # Minimum possible batch size
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 8     # Reasonable effective batch size of 8
   learning_rate: 2e-4                # Higher LR for large batch training
   warmup_steps: 50                   # Fast warmup
   logging_steps: 10                  # Frequent logging for monitoring
