@@ -10,6 +10,7 @@ import sys
 import json
 import logging
 import time
+import shutil
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -39,6 +40,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+def check_disk_space(path="/shared/data"):
+    """Check available disk space"""
+    try:
+        total, used, free = shutil.disk_usage(path)
+        logger.info(f"Disk space for {path}:")
+        logger.info(f"  Total: {total // (1024**3):.1f} GB")
+        logger.info(f"  Used:  {used // (1024**3):.1f} GB") 
+        logger.info(f"  Free:  {free // (1024**3):.1f} GB")
+        return free
+    except Exception as e:
+        logger.error(f"Could not check disk space: {e}")
+        return 0
 
 def verify_dependencies():
     """Verify all required dependencies are available"""
@@ -101,44 +115,44 @@ def download_and_process_dataset(config: Dict[str, Any]) -> Dataset:
     dataset_config = config['dataset']
     data_processing_config = config['data_processing']
     
-    # Download dataset
-    dataset = load_dataset(
+    # Download dataset with streaming to avoid disk space issues
+    streaming_dataset = load_dataset(
         dataset_config['name'], 
         split='train',
-        streaming=False
+        streaming=True
     )
     
-    logger.info(f"Downloaded dataset with {len(dataset)} total samples")
+    logger.info("Using streaming dataset to avoid disk space issues")
     
-    # Process and filter dataset
-    def clean_and_filter(batch):
-        # Clean lyrics
-        if data_processing_config['clean_lyrics']:
-            # Basic cleaning - remove extra whitespace and normalize
-            batch['text'] = batch['text'].strip() if batch['text'] else ""
+    # Process streaming dataset and collect samples we need
+    processed_samples = []
+    num_samples_needed = dataset_config['num_samples']
+    
+    logger.info(f"Processing streaming dataset to collect {num_samples_needed} samples...")
+    
+    for i, sample in enumerate(streaming_dataset):
+        if len(processed_samples) >= num_samples_needed:
+            break
+            
+        # Clean and filter sample
+        if data_processing_config['clean_lyrics'] and 'text' in sample:
+            sample['text'] = sample['text'].strip() if sample['text'] else ""
         
         # Filter by length
-        text_len = len(batch['text']) if batch['text'] else 0
-        if (text_len < data_processing_config['min_lyric_length'] or 
-            text_len > data_processing_config['max_lyric_length']):
-            return None
-            
-        return batch
+        if 'text' in sample:
+            text_len = len(sample['text'])
+            if (text_len >= data_processing_config['min_lyric_length'] and 
+                text_len <= data_processing_config['max_lyric_length']):
+                processed_samples.append(sample)
+        
+        # Log progress every 10k samples
+        if i % 10000 == 0:
+            logger.info(f"Processed {i} samples, collected {len(processed_samples)} valid samples")
     
-    # Apply filtering
-    logger.info("Applying data cleaning and filtering...")
-    dataset = dataset.filter(lambda x: clean_and_filter(x) is not None)
+    # Convert to Dataset object
+    dataset = Dataset.from_list(processed_samples)
     
-    # Remove duplicates if specified
-    if data_processing_config['remove_duplicates']:
-        logger.info("Removing duplicates...")
-        dataset = dataset.unique('text')
-    
-    # Limit to specified number of samples
-    num_samples = min(dataset_config['num_samples'], len(dataset))
-    dataset = dataset.select(range(num_samples))
-    
-    logger.info(f"Processed dataset: {len(dataset)} samples")
+    logger.info(f"Final processed dataset: {len(dataset)} samples")
     return dataset
 
 
@@ -306,14 +320,38 @@ def main():
     logger.info("Starting Music Lyrics Fine-tuning Training")
     start_time = time.time()
     
+    # Check disk space before starting
+    logger.info("=== Initial Disk Space Check ===")
+    check_disk_space("/shared/data")
+    check_disk_space("/shared/workspace") 
+    check_disk_space("/shared/models")
+    
     # Verify dependencies
     verify_dependencies()
     
     # Load configuration
     config = load_config()
     
+    # Check disk space before dataset operations
+    logger.info("=== Pre-Dataset Disk Space Check ===")
+    free_space = check_disk_space("/shared/data")
+    
+    # Set cache locations and clean up existing cache
+    cache_dir = "/shared/data/.cache"
+    if os.path.exists(cache_dir):
+        logger.info(f"Cleaning up existing cache at {cache_dir}")
+        shutil.rmtree(cache_dir)
+    
+    # Set environment variables to control HF cache locations
+    os.environ['HF_DATASETS_CACHE'] = "/shared/data/.cache/datasets"
+    os.environ['HF_HOME'] = "/shared/data/.cache/huggingface"
+    
     # Download and process dataset
     raw_dataset = download_and_process_dataset(config)
+    
+    # Check disk space after dataset operations
+    logger.info("=== Post-Dataset Disk Space Check ===")
+    check_disk_space("/shared/data")
     
     # Format for instruction following
     formatted_dataset = format_instruction_data(raw_dataset, config)
