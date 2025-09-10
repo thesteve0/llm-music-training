@@ -484,14 +484,14 @@ def main():
         pad_to_multiple_of=8,  # Optimize for GPU efficiency
     )
     
-    # Create trainer
+    # Create trainer (fix for newer transformers version)
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         data_collator=data_collator,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,  # Use processing_class instead of tokenizer
     )
     
     # Start training
