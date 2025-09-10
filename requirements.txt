@@ -1,1 +1,2 @@
 # All current requirements are in the base container quay.io/modh/training:py311-cuda124-torch251
+huggingface_hub[hf_xet]
