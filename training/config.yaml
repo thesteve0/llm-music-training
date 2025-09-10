@@ -3,7 +3,7 @@
 
 # Model Configuration
 model:
-  name: "meta-llama/Llama-3.2-3B-Instruct"
+  name: "microsoft/Phi-3-small-8k-instruct"
   torch_dtype: "float16"
   device_map: "auto"
   trust_remote_code: true
@@ -57,14 +57,14 @@ dataset:
   train_split: 0.95
   eval_split: 0.05
   max_length: 2048                   # Maximum sequence length
-  num_samples: 50000                 # Subset for demo training
+  num_samples: 90000                 # Subset for demo training
   shuffle_seed: 42
 
 # Data Processing
 data_processing:
   clean_lyrics: true                 # Remove special characters and normalize
   min_lyric_length: 50              # Filter out very short lyrics
-  max_lyric_length: 2000            # Filter out extremely long lyrics
+  max_lyric_length: 10000            # Filter out extremely long lyrics
   remove_duplicates: true           # Remove duplicate songs
   
 # Instruction Format Configuration

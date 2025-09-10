@@ -19,8 +19,7 @@ numpy>=1.24.0
 scikit-learn>=1.3.0
 
 # Training Monitoring and Logging
-tensorboard>=2.15.0
-wandb>=0.17.0
+#1tensorboard>=2.15.0
 
 # Configuration and File Handling
 pyyaml>=6.0
@@ -37,6 +36,3 @@ huggingface-hub>=0.23.0
 
 # Optional: For advanced optimizations
 deepspeed>=0.14.0
-
-# Music/Audio Processing (if needed for future enhancements)
-librosa>=0.10.0

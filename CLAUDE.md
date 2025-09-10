@@ -18,9 +18,13 @@ We are implementing single-node fine-tuning first to perfect the demo quality an
 - **Before Fine-tuning**: Generic model provides basic text analysis ("This appears to be about music and emotions")
 - **After Fine-tuning**: Specialized model provides expert-level insights about artist styles, genre characteristics, lyrical themes, and cultural context
 
-**Dataset**: HuggingFace rajtripathi/5M-Songs-Lyrics (5 million song entries with lyrics, artists, and metadata)
+**Dataset**: HuggingFace rajtripathi/5M-Songs-Lyrics (5 million song entries with lyrics and artists). Specifically the data has a column with an instruction of:
 
-**Model**: Llama-3.2-3B-Instruct with LoRA fine-tuning for efficient adaptation
+` Generate a song verse in the style of <artist> in the genre of <genre type>.`
+
+And then the next column contains the annotated lyrics of an actual song by that artist. 
+
+**Model**: Microsoft Phi-3-small-8k-instruct with LoRA fine-tuning for efficient adaptation
 
 **Training Technique**: High-performance LoRA (Low-Rank Adaptation) optimized for maximum VRAM utilization
 
@@ -35,10 +39,10 @@ We are implementing single-node fine-tuning first to perfect the demo quality an
 - **Total Available**: 96 GB RAM, 24 vCPU, 144 GB VRAM
 - **Current Utilization**: 1 node (45 GB VRAM for optimized training)
 
-**Namespace/Project**: rhoai-learning (consistent across all phases)
+**Namespace/Project**: lyrical-professor (consistent across all phases)
 
 **Storage Configuration:**
-- **cifar10-data-pvc**: Repurposed for lyrics dataset storage
+- **training-data-pvc**: Repurposed for lyrics dataset storage
 - **trained-models-pvc**: Model outputs and checkpoints  
 - **workspace-pvc**: Working directory and temporary files
 
@@ -48,7 +52,7 @@ We are implementing single-node fine-tuning first to perfect the demo quality an
 - **Maximum VRAM Utilization**: 45GB/48GB per GPU (94% utilization)
 - **High-Rank LoRA**: r=128 for maximum adaptation capacity
 
-## Current Resource Optimization
+## Current Resource Optimization Assumptions
 
 **VRAM Allocation Strategy (45GB per GPU):**
 - Base Model (FP16): ~6GB
@@ -127,17 +131,13 @@ The training script accepts configuration through environment variables:
 
 ## Training Pipeline Architecture
 
-### Model Architecture: Llama-3.2-3B + LoRA
-- **Base Model**: meta-llama/Llama-3.2-3B-Instruct
-- **Adaptation Method**: LoRA (Low-Rank Adaptation)
-- **Precision**: FP16 throughout training
-- **Memory Footprint**: ~6GB base model + ~500MB LoRA parameters
+### Model Architecture: Microsoft Phi-3-small-8k-instruct
 
 ### Data Pipeline: 5M Songs Lyrics
 - **Source**: HuggingFace rajtripathi/5M-Songs-Lyrics dataset
 - **Processing**: Instruction-following format creation
 - **Tasks**: Lyric analysis, artist style recognition, genre classification
-- **Training Examples**: ~50,000 processed samples for demo
+- **Training Examples**: ~90,000 processed samples for demo
 
 ### Training Features:
 - **High-Performance LoRA**: Rank 128 for maximum adaptation capacity
@@ -175,7 +175,7 @@ The training script accepts configuration through environment variables:
 - **Benefits**: Demonstrate distributed training scaling for larger models
 
 ### Phase 3: Conference Demo Optimization
-- **Dual Model Loading**: Keep both base and fine-tuned models in memory
+- **Dual Model Loading**: Load both models into Kserve through vLLM and serve them up
 - **Instant Comparisons**: Real-time before/after demonstrations  
 - **Interactive Scenarios**: Multiple demo examples ready for audience
 - **Performance Metrics**: Show training speed improvements and resource utilization

@@ -1,0 +1,127 @@
+apiVersion: kubeflow.org/v1
+kind: PyTorchJob
+metadata:
+  name: llm-music-finetuning
+  namespace: lyrical-professor
+  labels:
+    app.kubernetes.io/name: llm-music-training
+    app.kubernetes.io/managed-by: training-operator
+    opendatahub.io/component: training-operator
+    batch.kubernetes.io/job-name: llm-music-finetuning
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "8080"
+spec:
+  pytorchReplicaSpecs:
+    Master:
+      replicas: 1
+      restartPolicy: OnFailure
+      template:
+        metadata:
+          labels:
+            app: llm-music-training
+            app.kubernetes.io/name: llm-music-training
+            app.kubernetes.io/managed-by: training-operator
+            opendatahub.io/component: training-operator
+            batch.kubernetes.io/job-name: llm-music-finetuning
+          annotations:
+            prometheus.io/scrape: "true"
+            prometheus.io/path: "/metrics"
+            prometheus.io/port: "8080"
+        spec:
+          # Ensure scheduling on GPU nodes
+          nodeSelector:
+            nvidia.com/gpu.present: "true"
+          
+          # Add tolerations for GPU nodes - RHOAI specific
+          tolerations:
+            - key: "nvidia.com/gpu"
+              operator: "Exists"
+              effect: "NoSchedule"
+            - key: "node.kubernetes.io/instance-type"
+              operator: "Exists"
+              effect: "NoSchedule"
+
+          # Git clone initialization - no ConfigMap needed!
+          initContainers:
+            - name: git-clone
+              image: alpine/git:latest
+              command: ["git", "clone", "https://github.com/stpousty/llm-music-training.git", "/shared/code"]
+              volumeMounts:
+                - name: code-volume
+                  mountPath: /shared/code
+
+          # Main training container
+          containers:
+            - name: pytorch
+              image: quay.io/modh/training:py311-cuda124-torch251
+
+              # Install compatible dependencies and run training
+              command:
+                - "/bin/bash"
+                - "-c"
+                - |
+                  pip install --no-cache-dir -r /shared/code/requirements.txt
+                  python /shared/code/training/finetune_music_model.py
+
+              # Working directory for training outputs  
+              workingDir: /shared/workspace
+
+              # Resource requirements optimized for 48GB GPU
+              resources:
+                requests:
+                  cpu: "6"
+                  memory: "30Gi"
+                  nvidia.com/gpu: "1"
+                limits:
+                  cpu: "8"
+                  memory: "30Gi"
+                  nvidia.com/gpu: "1"
+
+              # Environment variables for training configuration
+              env:
+                - name: EPOCHS
+                  value: "2"
+                - name: BATCH_SIZE
+                  value: "24"
+                - name: LEARNING_RATE
+                  value: "2e-4"
+                - name: LORA_RANK
+                  value: "128"
+                - name: DATA_DIR
+                  value: "/shared/data"
+                - name: OUTPUT_DIR
+                  value: "/shared/models"
+                - name: WORKSPACE_DIR
+                  value: "/shared/workspace"
+                - name: HF_HOME
+                  value: "/shared/workspace/.cache/huggingface"
+                - name: TRANSFORMERS_CACHE
+                  value: "/shared/workspace/.cache/transformers"
+
+              # Volume mounts for code, data, and model storage
+              volumeMounts:
+                - name: code-volume
+                  mountPath: /shared/code
+                  readOnly: true
+                - name: training-data
+                  mountPath: /shared/data
+                - name: trained-models
+                  mountPath: /shared/models
+                - name: workspace
+                  mountPath: /shared/workspace
+
+          # Shared volumes across containers
+          volumes:
+            - name: code-volume
+              emptyDir: {}
+            - name: training-data
+              persistentVolumeClaim:
+                claimName: training-data-pvc
+            - name: trained-models
+              persistentVolumeClaim:
+                claimName: trained-models-pvc
+            - name: workspace
+              persistentVolumeClaim:
+                claimName: workspace-pvc
