@@ -10,7 +10,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 20Gi
+      storage: 18Gi
   storageClassName: gp3-csi  # Adjust based on your cluster's storage classes
 
 ---
